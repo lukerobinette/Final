@@ -1,0 +1,92 @@
+import RPi.GPIO as GPIO
+import time
+
+The code starts by importing the RPi.GPIO library for Raspberry Pi GPIO control and the time library for handling time-related functions.
+
+# GPIO Pins
+TRIG_PIN = 23
+ECHO_PIN = 24
+
+The script defines two GPIO pins (TRIG_PIN and ECHO_PIN) for an ultrasonic sensor.
+
+# Stoplight Pins
+GREEN_PIN = 17
+YELLOW_PIN = 27
+RED_PIN = 22
+
+Additionally, three GPIO pins (GREEN_PIN, YELLOW_PIN, and RED_PIN) are defined for controlling a traffic light.
+
+try:
+    # Set up GPIO
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(TRIG_PIN, GPIO.OUT)
+    GPIO.setup(ECHO_PIN, GPIO.IN)
+
+    GPIO.setup(GREEN_PIN, GPIO.OUT)
+    GPIO.setup(YELLOW_PIN, GPIO.OUT)
+    GPIO.setup(RED_PIN, GPIO.OUT)
+
+    The script sets up the GPIO mode as BCM and configures the specified pins for output (TRIG_PIN, GREEN_PIN, YELLOW_PIN, RED_PIN) and input (ECHO_PIN).
+
+    # Function to measure distance using ultrasonic sensor
+    def measure_distance():
+        GPIO.output(TRIG_PIN, True)
+        time.sleep(0.00001)
+        GPIO.output(TRIG_PIN, False)
+
+        pulse_start = time.time()
+        pulse_end = time.time()
+
+        while GPIO.input(ECHO_PIN) == 0:
+            pulse_start = time.time()
+
+        while GPIO.input(ECHO_PIN) == 1:
+            pulse_end = time.time()
+
+        pulse_duration = pulse_end - pulse_start
+        distance = pulse_duration * 17150  # Speed of sound in cm/s
+
+        return round(distance, 2)
+
+        The measure_distance function generates an ultrasonic pulse, measures the time it takes for the pulse to return (echo), and calculates the distance based on the speed of sound.
+
+    # Function to control stoplight based on distance
+    def control_stoplight(distance):
+        if distance > 30:  # More than a foot away
+            print("Green Light ON")
+            print("Yellow Light OFF")
+            print("Red Light OFF")
+            GPIO.output(GREEN_PIN, True)
+            GPIO.output(YELLOW_PIN, False)
+            GPIO.output(RED_PIN, False)
+        elif 15 <= distance <= 30:  # 6 - 11.9 inches away
+            print("Green Light OFF")
+            print("Yellow Light ON")
+            print("Red Light OFF")
+            GPIO.output(GREEN_PIN, False)
+            GPIO.output(YELLOW_PIN, True)
+            GPIO.output(RED_PIN, False)
+        else:  # Less than 6 inches away
+            print("Green Light OFF")
+            print("Yellow Light OFF")
+            print("Red Light ON")
+            GPIO.output(GREEN_PIN, False)
+            GPIO.output(YELLOW_PIN, False)
+            GPIO.output(RED_PIN, True)
+
+            The control_stoplight function takes the measured distance as an argument and controls the traffic light (green, yellow, and red) based on predefined distance thresholds.
+
+    try:
+        while True:
+            distance = measure_distance()
+            print("Distance: {} cm".format(distance))
+            control_stoplight(distance)
+            time.sleep(1)
+
+    except KeyboardInterrupt:
+        print("Measurement stopped by the user")
+
+finally:
+    GPIO.cleanup()
+
+    The script runs the main logic inside a try-except block. The main logic continuously measures the distance, prints it, and controls the stoplight. If a KeyboardInterrupt is detected (e.g., Ctrl+C), the script handles it by printing a message. Finally, the GPIO is cleaned up.
